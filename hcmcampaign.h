@@ -174,8 +174,8 @@ public:
     ARVN(Unit **unitArray, int size, string name, BattleField *battleField)
         : Army(unitArray, size, name, battleField) {}
 
-    void fightIfAttack(Army *enemy);
-    void fightIfDefense(Army *enemy);
+    void fightIfAttack(Army *enemy){}
+    void fightIfDefense(Army *enemy){}
 
     string str() const override;
 };

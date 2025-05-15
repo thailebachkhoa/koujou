@@ -1,44 +1,54 @@
-#include <iostream>
-#include <vector>
-using namespace std;
 
-// Lớp cơ sở ảo
-class Shape {
-public:
-    virtual void draw() const = 0; // Hàm thuần ảo
-    virtual ~Shape() {}            // Hàm hủy ảo
-};
+// void findCombination(vector<Unit *> &arr, int index, int target,
+//                      vector<Unit *> current, vector<Unit *> &result,
+//                      int &minSum)
+// {
 
-// Lớp con
-class Circle : public Shape {
-public:
-    void draw() const override {
-        cout << "Drawing Circle\n";
-    }
-};
+//     int currentSum = 0;
+//     for (auto unit : current)
+//     {
+//         currentSum += unit->getAttackScore();
+//     }
 
-class Rectangle : public Shape {
-public:
-    void draw() const override {
-        cout << "Drawing Rectangle\n";
-    }
-};
+//     if (currentSum > target && currentSum < minSum)
+//     {
+//         minSum = currentSum;
+//         result = current;
+//     }
 
-int main() {
-    vector<Shape*> shapes; // Vector chứa con trỏ đến lớp cơ sở ảo
+//     if (index >= arr.size())
+//     {
+//         return;
+//     }
 
-    shapes.push_back(new Circle());
-    shapes.push_back(new Rectangle());
+//     current.push_back(arr[index]);
+//     findCombination(arr, index + 1, target, current, result, minSum);
 
-    // Gọi hàm ảo qua con trỏ
-    for (auto s : shapes) {
-        s->draw(); // Gọi đúng hàm của lớp con (đa hình)
-    }
+//     current.pop_back();
+//     findCombination(arr, index + 1, target, current, result, minSum);
+// }
 
-    // Giải phóng bộ nhớ
-    for (auto s : shapes) {
-        delete s;
-    }
+// vector<Unit *> smallestCombinationGreaterThanTarget(UnitList *list, int target, bool (*validator)(Unit *))
+// {
+//     vector<Unit *> arr;
+//     vector<Unit *> current;
+//     vector<Unit *> result;
+//     int minSum = INT_MAX;
 
-    return 0;
-}
+//     for (auto i = list->getHead(); i != nullptr; i = i->next)
+//     {
+//         if (validator(i->unit))
+//         {
+//             arr.push_back(i->unit);
+//         }
+//     }
+
+//     findCombination(arr, 0, target, {}, result, minSum);
+
+//     if (minSum == INT_MAX)
+//     {
+//         return {};
+//     }
+
+//     return result;
+// }

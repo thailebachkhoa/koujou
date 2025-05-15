@@ -296,6 +296,8 @@ void Army::fight(Army *enemy, bool defense)
 
 void LiberationArmy::fightIfAttack(Army *enemy)
 {
+    // liberationArmy action
+    
 }
 void LiberationArmy::fightIfDefense(Army *enemy)
 {
@@ -326,68 +328,24 @@ void LiberationArmy::fightIfDefense(Army *enemy)
             unit->setQuantity(unit->getQuantity() - unit->getQuantity() * 0.1);
         }
     }
-}
 
-void ARVN::fightIfDefense(Army *enemy)
-{
-}
-void ARVN::fightIfDefense(Army *enemy)
-{
-}
-
-void findCombination(vector<Unit *> &arr, int index, int target,
-                     vector<Unit *> current, vector<Unit *> &result,
-                     int &minSum)
-{
-
-    int currentSum = 0;
-    for (auto unit : current)
+    // ARVN action
+    // XÓA mỗi đơn vị quân sự enemy 20% số lượng
+    for (int i = 0; i < enemy->getUnitList()->getCount(); i++)
     {
-        currentSum += unit->getAttackScore();
-    }
-
-    if (currentSum > target && currentSum < minSum)
-    {
-        minSum = currentSum;
-        result = current;
-    }
-
-    if (index >= arr.size())
-    {
-        return;
-    }
-
-    current.push_back(arr[index]);
-    findCombination(arr, index + 1, target, current, result, minSum);
-
-    current.pop_back();
-    findCombination(arr, index + 1, target, current, result, minSum);
-}
-
-vector<Unit *> smallestCombinationGreaterThanTarget(UnitList *list, int target, bool (*validator)(Unit *))
-{
-    vector<Unit *> arr;
-    vector<Unit *> current;
-    vector<Unit *> result;
-    int minSum = INT_MAX;
-
-    for (auto i = list->getHead(); i != nullptr; i = i->next)
-    {
-        if (validator(i->unit))
+        Unit *unit = enemy->getUnitList()->getUnit(i);
+        unit->setQuantity(unit->getQuantity() - unit->getQuantity() * 0.2);
+        if (unit->getQuantity() == 1)
         {
-            arr.push_back(i->unit);
+            enemy->getUnitList()->removeUnit(unit);
+            i--;
         }
     }
-
-    findCombination(arr, 0, target, {}, result, minSum);
-
-    if (minSum == INT_MAX)
-    {
-        return {};
-    }
-
-    return result;
+    resetLF_EXP();
 }
+
+
+
 /*setup group*/
 
 /*TerrainElement */
@@ -840,14 +798,11 @@ void HCMCampaign::run()
     if (eventCode < 75)
     {
         liberationArmy->fight(VNCHARMY, false);
-        VNCHARMY->fight(liberationArmy, true);
     }
-    else if (eventCode >= 75 && eventCode < 90)
+    else if (eventCode >= 75)
     {
-        VNCHARMY->fight(liberationArmy, false);
         liberationArmy->fight(VNCHARMY, true);
         liberationArmy->fight(VNCHARMY, false);
-        VNCHARMY->fight(liberationArmy, true);
     }
 
     // loại bỏ các đơn vị đã chết, chưa kiểm tra
