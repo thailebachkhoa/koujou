@@ -29,7 +29,7 @@ namespace sp
         return sqrt(pow(pos1.getRow() - pos2.getRow(), 2) + pow(pos1.getCol() - pos2.getCol(), 2));
     }
 
-    int closestFibonacci(int n)
+    int closestFibonacci(int n) // ???
     {
         if (n <= 0)
             return 0;
@@ -88,6 +88,25 @@ namespace sp
         vector<Infantry *> combinationB();
     };
 }
+// clean code part
+const string map_vehicle[] = {
+    "TRUCK",
+    "MORTAR",
+    "ANTIAIRCRAFT",
+    "ARMOREDCAR",
+    "APC",
+    "ARTILLERY",
+    "TANK"
+};
+
+const string map_infantries[] = {
+    "SNIPER",
+    "ANTIAIRCRAFTSQUAD",
+    "MORTARSQUAD",
+    "ENGINEER",
+    "SPECIALFORCES",
+    "REGULARINFANTRY"
+};
 
 /*Unit group*/
 // Implement the method virtual class Unit
@@ -98,7 +117,8 @@ Position Unit::getCurrentPosition() const { return pos; }
 // Implement the method vehicle
 int Vehicle::getAttackScore()
 {
-    double score = vehicleType * 304 + quantity * weight;
+    double score = vehicleType * 304 + quantity * weight; 
+    // có biến đổi applyEffects
     return ceil(score / 30.0);
 }
 string Vehicle::str() const
@@ -106,10 +126,10 @@ string Vehicle::str() const
     // format: Vehicle[attr_name=<attr_value>], vehicleType -> quantity, weight, pos
     stringstream ss;
     ss << "Vehicle[";
-    ss << "vehicleType=" << vehicleType << ",";
+    ss << "vehicleType=" << map_vehicle[vehicleType] << ",";
     ss << "quantity=" << quantity << ",";
     ss << "weight=" << weight << ",";
-    ss << "pos=" << pos.str() << "]";
+    ss << "position=" << pos.str() << "]";
     return ss.str();
 }
 // Implement the method Infantry
@@ -120,21 +140,21 @@ int Infantry::getAttackScore() // remarkable part
     if (infantryType == InfantryType::SPECIALFORCES && sp::isSquare(weight))
         score += 75;
 
-    int personalNumberin1975 = sp::personalNumber(score, 1975);
+    int personalNumberin1975 = sp::personalNumber(score, 1975); // ? cách dùng
     if (personalNumberin1975 > 7)
         setQuantity(ceil(quantity * 1.2));
     else if (personalNumberin1975 < 3)
         setQuantity(ceil(quantity * 0.9));
     else
         return score;
-
+    // applyEffects
     return infantryType * 56 + quantity * weight;
 }
 string Infantry::str() const
 {
     stringstream ss;
     ss << "Infantry[";
-    ss << "infantryType=" << infantryType << ",";
+    ss << "infantryType=" << map_infantries[infantryType] << ",";
     ss << "quantity=" << quantity << ",";
     ss << "weight=" << weight << ",";
     ss << "pos=" << pos.str() << "]";
@@ -161,11 +181,17 @@ UnitList::UnitList(Army *army)
     count_vehicle = 0;
     count_infantry = 0;
 }
+
 bool UnitList::insert(Unit *unit)
 {
     if (count_infantry + count_vehicle >= capacity)
         return false;
-
+    Unit *unitExist = findUnit(unit);
+    if (unitExist != nullptr)
+    {
+        unitExist->setQuantity(unitExist->getQuantity() + unit->getQuantity());
+        return true;
+    }
     if (unit->getUnitClassify() == VEHICLE)
     {
         array.push_back(static_cast<Vehicle *>(unit));
@@ -792,13 +818,10 @@ void HCMCampaign::run()
             battleField->getTerrainElement(i, j)->getEffect(liberationArmy);
         }
     }
+    
     // Giao tranh
-
     int eventCode = config->getEventCode();
-    if (eventCode < 75)
-    {
-        liberationArmy->fight(VNCHARMY, false);
-    }
+    if (eventCode < 75) liberationArmy->fight(VNCHARMY, false);
     else if (eventCode >= 75)
     {
         liberationArmy->fight(VNCHARMY, true);

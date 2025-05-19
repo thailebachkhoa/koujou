@@ -64,8 +64,9 @@ enum InfantryType
     REGULARINFANTRY
 };
 
+
 // dlinked list
-template <typename T>
+template <typename T> // class unitnode
 class Node
 {
 public:
@@ -129,7 +130,8 @@ protected:
     string name;
     UnitList *unitList;
     BattleField *battleField;
-
+    // vector<pair<double (*)(Unit*), Unit*>> EXPBonuses;
+    // vector<pair<double (*)(Unit*), Unit*>> LFPenalties;
 public:
     virtual void fightIfDefense(Army *enemy) = 0;
     virtual void fightIfAttack(Army *enemy) = 0;
@@ -155,6 +157,28 @@ public:
 
     void resetLF_EXP();
     string getName() const { return name; }
+    
+ 
+    // tesh
+    
+    // void calculateEXPAndLF(bool withEffect = true);
+
+    // bool removeUnit(Unit *unit, bool destroyUnit = false);
+    // bool addUnit(Unit *unit);
+
+    // void addEXPBonus(double (*fx)(Unit* unit), Unit* unitArg);
+    // void addLFPenalty(double (*fx)(Unit* unit), Unit* unitArg);
+
+    // UnitNode *getHead();
+
+    // /**
+    //  * Update each Unit by return value of cb and auto ceiling
+    //  */
+    // void updateQuantityEach(double (*cb)(int quantity));
+    // /**
+    //  * Update each Unit by return value of cb and auto ceiling
+    //  */
+    // void updateWeightEach(double (*cb)(int quantity)); 
    
 };
 class LiberationArmy : public Army
@@ -255,6 +279,7 @@ public:
     string str() const override;
     // getter, setter
     VehicleType getVehicleType() const { return vehicleType; }
+
 };
 class Infantry : public Unit
 {
@@ -279,6 +304,25 @@ private:
     int count_infantry;
     vector<Unit *> array; // array of unit
     Army *holder_of_this; // owner of this list
+    Unit* findUnit(Unit *unit)
+    {
+        for (int i = 0; i < capacity; i++)
+        {
+            if (!array[i]) continue;
+            if (unit->getUnitClassify() == VEHICLE) {
+                auto v1 = static_cast<Vehicle*>(unit);
+                auto v2 = dynamic_cast<Vehicle*>(array[i]);
+                if (v2 && v2->getVehicleType() == v1->getVehicleType())
+                    return v2;
+            } else {
+                auto i1 = static_cast<Infantry*>(unit);
+                auto i2 = dynamic_cast<Infantry*>(array[i]);
+                if (i2 && i2->getInfantryType() == i1->getInfantryType())
+                    return i2;
+            }
+        }
+        return nullptr;
+    }
     // TODO
 public:
     UnitList(Army *army);
@@ -347,6 +391,8 @@ public:
             ? getEffectOnLibArmy(static_cast<LiberationArmy *>(army))
             : getEffectOnARVN(static_cast<ARVN *>(army));
     }
+    Position getPos() const { return pos; }
+    void setPos(Position pos) { this->pos = pos; }
 };
 
 class Road : public TerrainElement
