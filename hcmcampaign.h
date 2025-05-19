@@ -304,8 +304,8 @@ private:
     int count_infantry;
     vector<Unit *> array; // array of unit
     Army *holder_of_this; // owner of this list
-    Unit* findUnit(Unit *unit)
-    {
+    Unit* findUnit(Unit *unit) // return the unit same type with parameter unit
+    { 
         for (int i = 0; i < capacity; i++)
         {
             if (!array[i]) continue;
@@ -339,6 +339,8 @@ public:
     int getCount() const { return count_vehicle + count_infantry; }
     void removeUnit(Unit *unit)
     {
+        if (unit == nullptr)
+            return;
         for (int i = 0; i < capacity; i++)
         {
             if (array[i] == unit)
@@ -514,6 +516,7 @@ private:
     // void afterfightMethod();
 public:
     HCMCampaign(const string &config_file_path);
+    ~HCMCampaign();
     void run();
     string printResult();
 };

@@ -58,35 +58,57 @@ namespace sp
         return true;
     }
 
-    int sumPointsofUnitList(vector<Vehicle *> vehicles)
+    void findCombination(vector<Unit *> &arr, int index, int target,
+                         vector<Unit *> current, vector<Unit *> &result,
+                         int &minSum)
     {
-        int sum = 0;
-        for (int i = 0; i < vehicles.size(); i++)
+        int currentSum = 0;
+        for (auto unit : current)
+            currentSum += unit->getAttackScore();
+
+        if (currentSum > target && currentSum < minSum)
         {
-            sum += vehicles[i]->getAttackScore();
+            minSum = currentSum;
+            result = current;
         }
-        return sum;
+
+        if (index >= arr.size())
+            return;
+
+        // Include current unit
+        current.push_back(arr[index]);
+        findCombination(arr, index + 1, target, current, result, minSum);
+
+        // Exclude current unit
+        current.pop_back();
+        findCombination(arr, index + 1, target, current, result, minSum);
     }
-    int sumPointsofUnitList(vector<Infantry *> infantries)
+    vector<Unit *> smallestCombinationGreaterThanTarget(UnitList *list, int target, bool (*validator)(Unit *))
     {
-        int sum = 0;
-        for (int i = 0; i < infantries.size(); i++)
+        vector<Unit *> arr;
+        for (int i = 0; i < list->getCount(); ++i)
         {
-            sum += infantries[i]->getAttackScore();
+            Unit *unit = list->getUnit(i);
+            if (validator(unit))
+                arr.push_back(unit);
         }
-        return sum;
+
+        vector<Unit *> result;
+        int minSum = INT_MAX;
+        findCombination(arr, 0, target, {}, result, minSum);
+
+        return (minSum == INT_MAX) ? vector<Unit *>() : result;
     }
 
-    class fightIfDefense_helper_LiberationArmy
+    bool isVehicle(Unit *unit)
     {
-    private:
-        Army *army;
+        return unit->getUnitClassify() == UnitClassify::VEHICLE;
+    }
 
-    public:
-        fightIfDefense_helper_LiberationArmy(Army *army = nullptr) : army(army) {}
-        vector<Vehicle *> combinationA();
-        vector<Infantry *> combinationB();
-    };
+    bool isInfantry(Unit *unit)
+    {
+        return unit->getUnitClassify() == UnitClassify::INFANTRY;
+    }
 }
 // clean code part
 const string map_vehicle[] = {
@@ -96,8 +118,7 @@ const string map_vehicle[] = {
     "ARMOREDCAR",
     "APC",
     "ARTILLERY",
-    "TANK"
-};
+    "TANK"};
 
 const string map_infantries[] = {
     "SNIPER",
@@ -105,8 +126,7 @@ const string map_infantries[] = {
     "MORTARSQUAD",
     "ENGINEER",
     "SPECIALFORCES",
-    "REGULARINFANTRY"
-};
+    "REGULARINFANTRY"};
 
 /*Unit group*/
 // Implement the method virtual class Unit
@@ -117,7 +137,7 @@ Position Unit::getCurrentPosition() const { return pos; }
 // Implement the method vehicle
 int Vehicle::getAttackScore()
 {
-    double score = vehicleType * 304 + quantity * weight; 
+    double score = vehicleType * 304 + quantity * weight;
     // có biến đổi applyEffects
     return ceil(score / 30.0);
 }
@@ -190,6 +210,10 @@ bool UnitList::insert(Unit *unit)
     if (unitExist != nullptr)
     {
         unitExist->setQuantity(unitExist->getQuantity() + unit->getQuantity());
+        if (unit->getWeight() > unitExist->getWeight())
+        {
+            unitExist->setWeight(unit->getWeight());
+        }
         return true;
     }
     if (unit->getUnitClassify() == VEHICLE)
@@ -323,7 +347,79 @@ void Army::fight(Army *enemy, bool defense)
 void LiberationArmy::fightIfAttack(Army *enemy)
 {
     // liberationArmy action
-    
+
+    // tăng chỉ số
+    this->setEXP(this->getEXP() * 1.5);
+    this->setLF(this->getLF() * 1.5);
+
+    auto A = sp::smallestCombinationGreaterThanTarget(this->unitList, enemy->getEXP(), sp::isInfantry);
+    auto B = sp::smallestCombinationGreaterThanTarget(this->unitList, enemy->getLF(), sp::isVehicle);
+
+    bool foundInfantryComb = A.size() > 0;
+    bool foundVehicleComb = B.size() > 0;
+    bool battle = false;
+
+    if (foundInfantryComb && foundVehicleComb)
+    {
+        battle = true;
+    }
+    else if (!foundInfantryComb && !foundVehicleComb)
+    { /*battel = false*/
+    }
+    else
+    {
+        // chỉ số tấn công toàn đội
+        int attackScore = 0;
+        for (int i = 0; i < this->unitList->getCount(); ++i)
+        {
+            attackScore += this->unitList->getUnit(i)->getAttackScore();
+        }
+        // chỉ số tấn công địch
+        int enemyAttackScore = 0;
+        for (int i = 0; i < enemy->getUnitList()->getCount(); ++i)
+        {
+            enemyAttackScore += enemy->getUnitList()->getUnit(i)->getAttackScore();
+        }
+        // nếu đội ta > địch
+        if (attackScore > enemyAttackScore)
+            battle = true;
+    }
+
+    if (battle)
+    {
+        // xóa tổ hợp ko thỏa mãn
+        if (foundInfantryComb)
+        {
+            for (Unit *unit : A)
+            {
+                unitList->removeUnit(unit);
+            }
+        }
+        if (foundVehicleComb)
+        {
+            for (Unit *unit : B)
+            {
+                unitList->removeUnit(unit);
+            }
+        }
+        // trưng dụng, thêm toàn bộ unitlist của enemy vào LiberationArmy
+        for (int i = 0; i < enemy->getUnitList()->getCount(); i++)
+        {
+            Unit *unit = enemy->getUnitList()->getUnit(i);
+            unitList->insert(unit);
+        }
+    }
+    else
+    {
+        // mỗi đơn vị quân sự xóa 10% trọng số
+        for (int i = 0; i < unitList->getCount(); i++)
+        {
+            Unit *unit = unitList->getUnit(i);
+            unit->setWeight(unit->getWeight() - unit->getWeight() * 0.1);
+        }
+    }
+
+    resetLF_EXP();
 }
 void LiberationArmy::fightIfDefense(Army *enemy)
 {
@@ -370,7 +466,39 @@ void LiberationArmy::fightIfDefense(Army *enemy)
     resetLF_EXP();
 }
 
+string ARVN::str() const
+{
+    stringstream ss;
+    ss << "ARVN[";
+    ss << "LF=" << getLF() << ",";
+    ss << "EXP=" << getEXP() << ",";
+    ss << "unitList=" << unitList->str() << ",";
+    ss << "battleField=";
+    if (battleField != nullptr)
+    {
+        ss << battleField->str();
+    }
+    ss << "]";
+    return ss.str();
+}
 
+string LiberationArmy::str() const
+{
+    stringstream ss;
+    ss << "LiberationArmy[";
+    ss << "LF=" << getLF() << ",";
+    ss << "EXP=" << getEXP() << ",";
+    ss << "unitList=" << unitList->str() << ",";
+    ss << "battleField=";
+    if (battleField != nullptr)
+    {
+        ss << battleField->str();
+    }
+    ss << "]";
+    return ss.str();
+}
+
+// fight trong battlefield hay fight ngẫu nhiên
 
 /*setup group*/
 
@@ -612,13 +740,13 @@ Configuration::Configuration(const string &config_file_path)
     Node<Unit *> *temp = list_UncludeHo;
     for (int i = 0; i < count_ARVNUnit; i++)
     {
-        ARVNUnits[i] = temp->data;
+        liberationUnits[i] = temp->data;
         temp = temp->next;
     }
     temp = list_3que;
     for (int i = 0; i < count_liberUnit; i++)
     {
-        liberationUnits[i] = temp->data;
+        ARVNUnits[i] = temp->data;
         temp = temp->next;
     }
     delete list_UncludeHo;
@@ -700,9 +828,9 @@ Configuration::~Configuration()
 string Configuration::str()
 {
     stringstream ss;
-    ss << "CONFIGURATION[\n"
-       << "NUMS_ROWS=" << num_rows << "\n"
-       << "NUM_COLS=" << num_cols << "\n";
+    ss << "["
+       << "num_rows=" << num_rows << ","
+       << "num_cols=" << num_cols << ",";
 
     auto formatArray = [&](const string &name, const vector<Position *> &array)
     {
@@ -713,29 +841,34 @@ string Configuration::str()
             if (i != array.size() - 1)
                 ss << ",";
         }
-        ss << "]\n";
+        ss << "],";
     };
 
-    formatArray("ARRAY_FOREST", arrayForest);
-    formatArray("ARRAY_RIVER", arrayRiver);
-    formatArray("ARRAY_FORTIFICATION", arrayFortification);
+    formatArray("arrayForest", arrayForest);
+    formatArray("arrayRiver", arrayRiver);
+    formatArray("arrayFortification", arrayFortification);
     formatArray("ARRAY_URBAN", arrayUrban);
     formatArray("ARRAY_SPECIAL_ZONE", arraySpecialZone);
 
-    ss << "UNIT_LIST=[";
+    ss << "liberationUnits=[";
     for (int i = 0; i < count_liberUnit; ++i)
     {
         ss << liberationUnits[i]->str();
         if (i != count_liberUnit - 1)
             ss << ",";
     }
+    ss << "],";
+
+    ss << "ARVNUnits=[";
     for (int i = 0; i < count_ARVNUnit; ++i)
     {
         ss << ARVNUnits[i]->str();
         if (i != count_ARVNUnit - 1)
             ss << ",";
     }
-    ss << "]\nEVENT_CODE=" << eventCode << "\n]";
+    ss << "],";
+
+    ss << "eventCode=" << eventCode << "]";
 
     return ss.str();
 }
@@ -818,10 +951,11 @@ void HCMCampaign::run()
             battleField->getTerrainElement(i, j)->getEffect(liberationArmy);
         }
     }
-    
+
     // Giao tranh
     int eventCode = config->getEventCode();
-    if (eventCode < 75) liberationArmy->fight(VNCHARMY, false);
+    if (eventCode < 75)
+        liberationArmy->fight(VNCHARMY, false);
     else if (eventCode >= 75)
     {
         liberationArmy->fight(VNCHARMY, true);
@@ -859,6 +993,8 @@ void HCMCampaign::run()
         Unit *unit = liberationArmy->getUnitList()->getUnit(i);
         unit->setTempAttackScore(unit->getAttackScore());
     }
+    liberationArmy->resetLF_EXP();
+    VNCHARMY->resetLF_EXP();
 }
 HCMCampaign::HCMCampaign(const string &config_file_path)
 {
@@ -874,33 +1010,25 @@ HCMCampaign::HCMCampaign(const string &config_file_path)
 }
 string HCMCampaign::printResult()
 {
-    /*
-    format: LIBERATIONARMY[LF=<LF>,EXP=<EXP>]-ARVN[LF=<LF>,EXP=<EXP>]
-    */
-    int LF_LiberationArmy = liberationArmy->getLF();
-    int EXP_LiberationArmy = liberationArmy->getEXP();
-    int LF_ARVN = VNCHARMY->getLF();
-    int EXP_ARVN = VNCHARMY->getEXP();
-
     stringstream ss;
-    ss << "LIBERATIONARMY[LF=" << LF_LiberationArmy << ",EXP=" << EXP_LiberationArmy
-       << "]-ARVN[LF=" << LF_ARVN << ",EXP=" << EXP_ARVN << "]";
-
+    ss << "LIBERATIONARMY[";
+    ss << "LF=" << liberationArmy->getLF() << ",";
+    ss << "EXP=" << liberationArmy->getEXP();
+    ss << "]-";
+    ss << "ARVN[";
+    ss << "LF=" << VNCHARMY->getLF() << ",";
+    ss << "EXP=" << VNCHARMY->getEXP();
+    ss << "]";
     return ss.str();
 }
 
 HCMCampaign::~HCMCampaign()
 {
-    try
-    {
-        delete VNCHARMY;
-        delete liberationArmy;
-        delete battleField;
-        delete config;
-    }
-    catch (const std::exception &e)
-    {
-    }
+
+    delete VNCHARMY;
+    delete liberationArmy;
+    delete battleField;
+    delete config;
 }
 ////////////////////////////////////////////////
 /// END OF STUDENT'S ANSWER
